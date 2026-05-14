@@ -1,0 +1,44 @@
+{
+    "name": "mamazu/sulu-cli-bundle",
+    "description": "A bundle for browsing and editing sulu content",
+    "type": "library",
+    "require": {
+        "sulu/sulu": "^3.0",
+        "webmozart/assert": "^1.11"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^1.8",
+        "phpstan/phpstan-webmozart-assert": "^1.2"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Mamazu\\SuluCliBundle\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mamazu\\SuluCliBundle\\": "tests/"
+        }
+    },
+    "scripts": {
+        "analyse": [
+            "vendor/bin/phpstan"
+        ],
+        "test": [
+            "vendor/bin/phpunit"
+        ]
+    },
+    "authors": [
+        {
+            "name": "mamazu",
+            "email": "14860264+mamazu@users.noreply.github.com"
+        }
+    ],
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": false
+        }
+    }
+}
