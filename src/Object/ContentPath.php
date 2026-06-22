@@ -16,6 +16,10 @@ class ContentPath
 
     public function append(string $string): void
     {
+        if ($string === '') {
+            return;
+        }
+
         $parts = explode('/', $string);
 
         if ($this->inspecting) {
@@ -35,6 +39,9 @@ class ContentPath
     public function toggleInspection(): void
     {
         $this->inspecting = !$this->inspecting;
+        if ($this->inspecting === false) {
+            $this->propertyParts = [];
+        }
     }
 
     public function stopInspecting(): void
@@ -74,6 +81,7 @@ class ContentPath
 
     public function set(string $path): void
     {
+        $propertyPath = null;
         if (str_starts_with($path, '/')) {
             // Absolute path, reset the thing
             $this->routeParts = [];
@@ -82,7 +90,15 @@ class ContentPath
             $path = ltrim($path, '/');
         }
 
+        if (str_contains($path, '|')) {
+            [$path, $propertyPath] = explode('|', $path, 2);
+        }
+
         $this->append($path);
+        if (null !== $propertyPath) {
+            $this->inspecting = true;
+            $this->append($propertyPath);
+        }
     }
 
     public function __toString(): string

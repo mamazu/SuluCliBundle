@@ -5,6 +5,8 @@ namespace Mamazu\SuluCliBundle;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Mamazu\SuluCliBundle\Command\ContentCliCommand;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver;
+use Mamazu\SuluCliBundle\Services\ChangesetSaverInterface;
 use Sulu\Component\Webspace\Manager\WebspaceManagerInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
@@ -22,9 +24,12 @@ class SuluCliBundle extends AbstractBundle
             ->args([
                 new Reference(WebspaceManagerInterface::class),
                 new Reference(EntityManagerInterface::class),
+                new Reference(ChangesetSaverInterface::class),
             ])
             ->tag('console.command')
         ;
+
+        $services->set(ChangesetSaverInterface::class, ChangesetSaver::class);
     }
 }
 

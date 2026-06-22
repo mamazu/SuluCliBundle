@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Mamazu\SuluCliBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\NoResultException;
 use Mamazu\SuluCliBundle\Object\ContentPath;
+use Mamazu\SuluCliBundle\Object\DeletePath;
+use Mamazu\SuluCliBundle\Services\ChangesetSaverInterface;
 use Sulu\Component\Webspace\Manager\WebspaceManagerInterface;
 use Sulu\Component\Webspace\Webspace;
 use Sulu\Page\Domain\Model\PageDimensionContent;
@@ -19,7 +22,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 #[AsCommand(name: 'sulu:content:cli', description: 'Provides an interactive command line to edit sulu content')]
 class ContentCliCommand extends Command
 {
-/**
     private const HELP_TEXT = <<<TXT
         ## Navigation
 
@@ -29,7 +31,7 @@ class ContentCliCommand extends Command
         ## Editing
 
         <comment>set <path> <value></comment> # Updates the value (not yet saved)
-        <comment>set <path></comment> # Removes a value (not yet saved)
+        <comment>rm <path></comment> # Removes a value (not yet saved)
         <comment>save</comment> # Save changes to the database
 
         ## Leaving
@@ -37,15 +39,14 @@ class ContentCliCommand extends Command
         <comment>exit</comment> # Exit program
         <comment>exit!</comment> # Exit program without saving
         TXT;
-*/
 
     private string $stage;
 
     public function __construct(
         private readonly WebspaceManagerInterface $webspaceManager,
         private readonly EntityManagerInterface $entityManager,
-    )
-    {
+        private readonly ChangesetSaverInterface $changesetSaver,
+    ) {
         parent::__construct();
     }
 
@@ -69,15 +70,17 @@ class ContentCliCommand extends Command
         $changes = [];
 
         foreach ($shell->run() as $answer) {
-            if ($answer === '' || $answer === 'exit!') {
+            if ($answer === 'exit!') {
                 break;
             }
 
             if ($answer === 'exit') {
+                dump($changes);
                 if ([] !== $changes) {
                     $output->writeln('<error>You can\'t leave with pending changes. Either "save" them or use "exit!"</error>');
                     continue;
                 }
+
                 break;
             }
 
@@ -102,7 +105,12 @@ class ContentCliCommand extends Command
                 }
 
                 [$_, $property, $value] = explode(' ', $answer, 3);
-                $changes[$path->__toString().'/'.$property] = $value;
+
+                $setPath = clone $path;
+                $setPath->set($property);
+                $changes[$setPath->__toString()] = new SetValue($value);
+
+                continue;
             }
 
             if (str_starts_with($answer, 'rm')) {
@@ -111,13 +119,20 @@ class ContentCliCommand extends Command
                     continue;
                 }
 
-                // todo: implement this
-                $output->writeln('<error>Removing things is currently not implemented');
+                [$_, $property] = explode(' ', $answer, 2);
+
+                $setPath = clone $path;
+                $setPath->set($property);
+                $changes[$setPath->__toString()] = new DeletePath();
+
+                continue;
             }
 
             if ($answer === 'save') {
-                // todo: Save changes to the disk
-                $output->writeln('<error>Not implemented</error>');
+                $output->writeln('Saving '.count($changes).' change(s)');
+                $this->changesetSaver->save($changes);
+
+                $output->writeln('<success>Saved!</success>');
                 continue;
             }
 
@@ -147,7 +162,12 @@ class ContentCliCommand extends Command
                     $this->listLocales($output, $path);
                 } else {
                     $this->listRoutes($output, $path);
-                    $this->listContent($output, $path);
+
+                    try {
+                        $this->listContent($output, $path);
+                    } catch (NoResultException) {
+                        $output->writeln('<error>The path does not exists. There is no content here.</error>');
+                    }
                 }
                 $path = $currentPath;
                 continue;
@@ -166,6 +186,7 @@ class ContentCliCommand extends Command
             fn (Webspace $webspace) => $webspace->getKey(),
             $this->webspaceManager->getWebspaceCollection()->getWebspaces(),
         );
+
         foreach ($webspaceKeys as $webspaceKey) {
             $output->writeln('* '.$webspaceKey);
         }
@@ -188,14 +209,14 @@ class ContentCliCommand extends Command
             ->setParameter('stage', $this->stage);
 
         if (!$path->isInspecting()) {
-            $count = $queryBuilder->select('p.id') ->getQuery() ->getSingleScalarResult() ;
+            $count = $queryBuilder->select('p.id')->getQuery()->getSingleScalarResult();
             $output->writeln('<comment>There are also properties. To see them use "inspect"</comment>');
 
             return;
         }
 
         /** @var array{templateData: array<mixed>} $array */
-        $array = $queryBuilder->getQuery() ->getSingleResult();
+        $array = $queryBuilder->getQuery()->getSingleResult();
         $templateData = $this->iteratePath($array['templateData'], $path);
 
         if (is_array($templateData)) {
@@ -270,7 +291,7 @@ class ContentCliCommand extends Command
 
     public function printHelp(OutputInterface $output): void
     {
-    //    $output->writeln(self::HELP_TEXT);
+        $output->writeln(self::HELP_TEXT);
     }
 }
 

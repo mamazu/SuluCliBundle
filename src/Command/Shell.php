@@ -78,6 +78,10 @@ class Shell
                 break;
             }
 
+            if ('' === $command) {
+                continue;
+            }
+
             if ($this->hasReadline) {
                 readline_add_history($command);
                 readline_write_history($this->history);
