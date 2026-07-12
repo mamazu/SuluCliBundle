@@ -14,7 +14,7 @@ class ContentPath
     /** @var array<string> $propertyParts */
     private array $propertyParts = [];
 
-    public function append(string $string): void
+    private function append(string $string): void
     {
         if ($string === '') {
             return;
@@ -65,11 +65,6 @@ class ContentPath
         return $this->routeParts[1] ?? null;
     }
 
-    public function getContentPath(): array
-    {
-        return $this->propertyParts;
-    }
-
     public function getRoute(): ?string
     {
         if (!array_key_exists(2, $this->routeParts)) {
@@ -77,6 +72,11 @@ class ContentPath
         }
 
         return implode('/', array_slice($this->routeParts, 2));
+    }
+
+    public function getPropertyPath(): string
+    {
+        return implode('/', $this->propertyParts);
     }
 
     public function set(string $path): void
@@ -103,6 +103,6 @@ class ContentPath
 
     public function __toString(): string
     {
-        return '/'.implode('/', $this->routeParts) . ($this->inspecting ? '|' :''). implode('/', $this->propertyParts);
+        return '/' . implode('/', $this->routeParts) . ($this->inspecting ? '|' : '') . $this->getPropertyPath();
     }
 }

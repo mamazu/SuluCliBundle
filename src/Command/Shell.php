@@ -1,8 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 /*
- * This file is part of the PHPCR Shell package
+ * This file was part of the PHPCR Shell package
  *
  * (c) Daniel Leech <daniel@dantleech.com>
  *
@@ -13,6 +14,7 @@ declare(strict_types=1);
 
 namespace Mamazu\SuluCliBundle\Command;
 
+use Mamazu\SuluCliBundle\Object\ContentPath;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
@@ -24,7 +26,6 @@ class Shell
 {
     private string $history;
     private bool $hasReadline;
-    private string $prompt;
     private string $name = 'sulu_content_cli';
 
     /**
@@ -34,36 +35,34 @@ class Shell
      * a \RuntimeException exception is thrown.
      */
     public function __construct(
-        private OutputInterface $output
+        private OutputInterface $output,
+        private ContentPath $prompt,
     ) {
         $this->hasReadline = function_exists('readline');
         $this->history = $this->getHistoryDirectory();
-        $this->prompt = '/';
-    }
-
-    public function setPrompt(string $prompt): void {
-        $this->prompt = $prompt;
     }
 
     public function getHistoryDirectory(): string
     {
         $dataDirectory = getenv('XDG_DATA_HOME');
         if ($dataDirectory !== '') {
-            return $dataDirectory.'/'.$this->name;
+            return $dataDirectory . '/' . $this->name;
         }
 
-        return getenv('HOME').'/.history_'.$this->name;
+        return getenv('HOME') . '/.history_' . $this->name;
     }
 
     /**
-    * Runs the shell.
-    *
-    * @return \Generator<string>
+     * Runs the shell.
+     *
+     * @return \Generator<string>
      */
     public function run(): \Generator
     {
         if ($this->hasReadline) {
             readline_read_history($this->history);
+
+            // todo
             // readline_completion_function([$this, 'autocompleter']);
         }
 
@@ -91,21 +90,21 @@ class Shell
                 return;
             }
         }
-}
+    }
 
-   /**
+    /**
      * Returns the shell header.
      *
      * @return string The header string
      */
     protected function getHeader()
     {
-return <<<TXT
-Welcome to <info>{$this->name}</info>.
+        return <<<TXT
+            Welcome to <info>{$this->name}</info>.
 
-At the prompt, type <comment>help</comment> for some help.
-To exit the shell, type <comment>exit</comment>.
-TXT;
+            At the prompt, type <comment>help</comment> for some help.
+            To exit the shell, type <comment>exit</comment>.
+            TXT;
     }
 
     /**
@@ -114,9 +113,9 @@ TXT;
     private function readline(): string|false
     {
         if ($this->hasReadline) {
-            $line = readline($this->prompt. ' > ');
+            $line = readline($this->prompt->__toString() . ' > ');
         } else {
-            $this->output->write($this->prompt);
+            $this->output->write($this->prompt->__toString());
             $line = fgets(STDIN, 1024);
             if ($line === false) {
                 return false;
@@ -127,4 +126,3 @@ TXT;
         return $line;
     }
 }
-

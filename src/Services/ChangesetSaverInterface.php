@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace Mamazu\SuluCliBundle\Services;
 
-use Mamazu\SuluCliBundle\Object\DeletePath;
+use Mamazu\SuluCliBundle\Object\Changes\ChangeSet;
 
 interface ChangesetSaverInterface
 {
-    /**
-     * @param array<string, string|DeletePath> $changes
-     */
-    public function save(array $changes): void;
+    public function save(ChangeSet $changeSet): void;
 }
