@@ -13,7 +13,7 @@ class SetCommand implements SubCommand
     {
         $args = $context->getSubCommandArguments();
         $style = $context->getStyle();
-        if (substr_count($args, ' ') < 2) {
+        if (substr_count($args, ' ') === 0) {
             $style->error('"set" requires two arguments');
             return false;
         }
@@ -30,6 +30,10 @@ class SetCommand implements SubCommand
         // Check if the path is now pointing to a property path
         if (!$setPath->isInspecting()) {
             $style->error('Can not set pages');
+
+            // Reverting back to the path before the set command
+            $setPath->set($revertingChanges);
+
             return false;
         }
 

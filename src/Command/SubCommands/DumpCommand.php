@@ -10,8 +10,11 @@ class DumpCommand implements SubCommand
 {
     public function run(CommandContext $context): bool
     {
+        $context->getStyle()->title('Changes');
         dump($context->getChangeSet()->getChanges());
 
+        $context->getStyle()->title('Webspaces to delete');
+        dump($context->getChangeSet()->getWebspaces());
         return false;
     }
 

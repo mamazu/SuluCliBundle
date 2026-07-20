@@ -17,8 +17,10 @@ use Mamazu\SuluCliBundle\Command\SubCommands\RemoveCommand;
 use Mamazu\SuluCliBundle\Command\SubCommands\SaveCommand;
 use Mamazu\SuluCliBundle\Command\SubCommands\SetCommand;
 use Mamazu\SuluCliBundle\Command\SubCommands\ListCommand;
-use Mamazu\SuluCliBundle\Services\ChangesetSaver;
-use Mamazu\SuluCliBundle\Services\ChangesetSaverInterface;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver\ChangesetSaver;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver\ChangesetSaverInterface;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver\WebspaceRemover;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver\WebspaceRemoverInterface;
 use Mamazu\SuluCliBundle\Services\ListHandlers\ConsoleContentLister;
 use Mamazu\SuluCliBundle\Services\ListHandlers\ListContentAtPath;
 use Mamazu\SuluCliBundle\Services\ListHandlers\ListLocalesForContentPath;
@@ -87,6 +89,11 @@ class SuluCliBundle extends AbstractBundle
 
         // Services
         $services->set(ChangesetSaverInterface::class, ChangesetSaver::class)->args([
+            new Reference(EntityManagerInterface::class),
+            new Reference(WebspaceRemoverInterface::class),
+        ]);
+
+        $services->set(WebspaceRemoverInterface::class, WebspaceRemover::class)->args([
             new Reference(EntityManagerInterface::class),
         ]);
 

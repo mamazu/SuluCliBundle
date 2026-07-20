@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Mamazu\SuluCliBundle\Services;
+namespace Mamazu\SuluCliBundle\Services\ChangesetSaver;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Mamazu\SuluCliBundle\Object\Changes\ChangeSet;
@@ -10,27 +10,40 @@ use Mamazu\SuluCliBundle\Object\Changes\DeletePath;
 use Mamazu\SuluCliBundle\Object\Changes\SetValue;
 use Sulu\Page\Domain\Model\PageDimensionContent;
 
-class ChangesetSaver implements ChangesetSaverInterface
+final class ChangesetSaver implements ChangesetSaverInterface
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly WebspaceRemoverInterface $webspaceRemover,
     ) {}
 
-    public function save(ChangeSet $changeSet): void
+    public function save(ChangeSet $changeSet, string $stage): void
     {
         foreach ($changeSet->getChanges() as $pageId => $changes) {
-            $page = $this->entityManager->find(PageDimensionContent::class, $pageId);
-            if ($page === null)
+            /** @var PageDimensionContent|null $dimensionContent */
+            $dimensionContent = $this->entityManager->find(PageDimensionContent::class, $pageId);
+            if ($dimensionContent === null) {
                 continue;
+            }
 
             if (is_array($changes)) {
-                $this->applyChanges($page, $changes);
-            } else {
-                $this->entityManager->remove($page);
+                $this->applyChanges($dimensionContent, $changes);
+                $this->entityManager->flush();
+                continue;
+            }
+
+            if ($changes instanceof DeletePath) {
+                $this->entityManager->remove($dimensionContent);
             }
 
             $this->entityManager->flush();
         }
+
+        foreach ($changeSet->getWebspaces() as $webspace) {
+            $this->webspaceRemover->removeWebspace($webspace, $stage);
+        }
+
+        $this->entityManager->flush();
     }
 
     /**

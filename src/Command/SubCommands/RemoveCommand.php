@@ -12,14 +12,29 @@ class RemoveCommand implements SubCommand
     public function run(CommandContext $context): bool
     {
         $answer = $context->getSubCommandArguments();
+        $style = $context->getStyle();
+
         if ($answer === '') {
             $context->getStyle()->error('rm requires an argument');
             return false;
         }
 
-        $setPath = clone $context->getContentPath();
-        $setPath->set($answer);
-        $context->getChangeSet()->add($setPath, $context->getStage(), new DeletePath());
+        $removePath = clone $context->getContentPath();
+        $removePath->set($answer);
+
+        if ($removePath->getRoute() === null
+            && $removePath->getLocale() === null
+            && $removePath->getWebspace() !== null
+        ) {
+            $confirm = $context->getStyle()->confirm('You\'re trying to remove a webspace. Are you sure', true);
+            if (!$confirm) {
+                $style->note('Skipping');
+                return false;
+            }
+            $context->getChangeSet()->removeWebspace($removePath->getWebspace());
+        }
+
+        $context->getChangeSet()->add($removePath, $context->getStage(), new DeletePath());
 
         return false;
     }

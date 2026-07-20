@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Mamazu\SuluCliBundle\Command\SubCommands;
 
 use Mamazu\SuluCliBundle\Object\Commands\CommandContext;
-use Mamazu\SuluCliBundle\Services\ChangesetSaver;
+use Mamazu\SuluCliBundle\Services\ChangesetSaver\ChangesetSaverInterface;
 
 class SaveCommand implements SubCommand
 {
     public function __construct(
-        private ChangesetSaver $changesetSaver,
+        private ChangesetSaverInterface $changesetSaver,
     ) {}
 
     public function run(CommandContext $context): bool
@@ -19,7 +19,7 @@ class SaveCommand implements SubCommand
         $style = $context->getStyle();
 
         $style->text('Saving ' . count($changeSet) . ' change(s)');
-        $this->changesetSaver->save($changeSet);
+        $this->changesetSaver->save($changeSet, $context->getStage());
 
         $style->success('Saved!');
 
