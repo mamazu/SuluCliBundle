@@ -55,6 +55,17 @@ class ContentPathTest extends TestCase
 		$this->assertSame('test-page/some-site', $this->path->getRoute());
 		$this->assertSame('es', $this->path->getLocale());
 		$this->assertSame('webspace', $this->path->getWebspace());
+    }
+
+	public function testUsingDotDoesNothing(): void
+	{
+        $contentPath ='/webspace/es/test-page';
+
+		$this->path->set('/webspace/./es/test-page');
+        $this->assertSame($contentPath, $this->path->__toString());
+
+		$this->path->set('.');
+		$this->assertSame($contentPath, $this->path->__toString());
 	}
 
 	#[DataProvider('dataPrintItself')]

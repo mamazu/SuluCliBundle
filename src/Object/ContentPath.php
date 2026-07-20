@@ -14,6 +14,13 @@ class ContentPath
     /** @var array<string> $propertyParts */
     private array $propertyParts = [];
 
+    public function __construct(?string $path = null)
+    {
+        if ($path !== null) {
+            $this->set($path);
+        }
+    }
+
     private function append(string $string): void
     {
         if ($string === '') {
@@ -30,6 +37,8 @@ class ContentPath
         foreach ($parts as $part) {
             if ($part === '..') {
                 array_pop($target);
+            } else if ($part === '.') {
+                // Do nothing it's just a dot
             } else {
                 $target[] = $part;
             }

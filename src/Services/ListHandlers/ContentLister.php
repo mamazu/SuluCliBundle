@@ -10,5 +10,6 @@ interface ContentLister
 {
     public function getHeadline(): string;
 
+    /** @return array<string>|string */
     public function listContent(ContentPath $path, string $stage): array|string;
 }

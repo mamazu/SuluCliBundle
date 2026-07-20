@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace Mamazu\SuluCliBundle\Command;
 
-use Mamazu\SuluCliBundle\Object\Changes\ChangeSet;
-use Mamazu\SuluCliBundle\Object\Changes\DeletePath;
-use Mamazu\SuluCliBundle\Object\Changes\SetValue;
-use Mamazu\SuluCliBundle\Object\ContentPath;
-use Mamazu\SuluCliBundle\Services\ChangesetSaverInterface;
-use Mamazu\SuluCliBundle\Services\ListHandlers\ConsoleContentLister;
+use Mamazu\SuluCliBundle\Command\SubCommands\SubCommand;
+use Mamazu\SuluCliBundle\Object\Commands\CommandContext;
 use Mamazu\SuluCliBundle\Services\PathToNodeConverter;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -18,33 +14,20 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Component\DependencyInjection\ServiceLocator;
+use Webmozart\Assert\Assert;
 
 #[AsCommand(name: 'sulu:content:cli', description: 'Provides an interactive command line to edit sulu content')]
 class ContentCliCommand extends Command
 {
-    private const HELP_TEXT = <<<TXT
-        ## Navigation
-
-        <comment>ls [path]</comment> # Show content to navigate to (webspaces, paths and properties)
-        <comment>cd <path></comment> # Change directory
-
-        ## Editing
-
-        <comment>set <path> <value></comment> # Updates the value (not yet saved)
-        <comment>rm <path></comment> # Removes a value (not yet saved)
-        <comment>save</comment> # Save changes to the database
-
-        ## Leaving
-
-        <comment>exit</comment> # Exit program
-        <comment>exit!</comment> # Exit program without saving
-        TXT;
 
     private string $stage;
 
+    /**
+    * @param ServiceLocator<SubCommand> $subCommands
+    */
     public function __construct(
-        private readonly ConsoleContentLister $contentLister,
-        private readonly ChangesetSaverInterface $changesetSaver,
+        private readonly ServiceLocator $subCommands,
         private readonly PathToNodeConverter $pathToNodeConverter,
     ) {
         parent::__construct();
@@ -68,124 +51,34 @@ class ContentCliCommand extends Command
         }
 
         $questionHelper = $this->getHelper('question');
-        $path = new ContentPath();
-        $shell = new Shell($output, $path);
-        $changeSet = new ChangeSet($this->pathToNodeConverter);
         $style = new SymfonyStyle($input, $output);
+        $context = new CommandContext(
+            $this->stage,
+            $style,
+            $this->pathToNodeConverter,
+        );
+        $shell = new Shell($output, $context->getContentPath());
 
         foreach ($shell->run() as $answer) {
-            if ($answer === 'exit!') {
-                break;
+            $command = $answer;
+            $subCommands = '';
+            $position = strpos($answer, ' ');
+            if (is_int($position)){
+                $command = substr($command, 0, $position);
+                $subCommands = substr($answer, $position + 1);
             }
 
-            if ($answer === 'exit') {
-                if ($changeSet->isEmpty()) {
-                    $style->info(sprintf(
-                        'You have %d changes that were not yet saved.',
-                        count($changeSet),
-                    ));
-                    $style->error(
-                        'You can\'t leave with pending changes. Either "save" them or use "exit!"',
-                    );
-                    continue;
-                }
-
-                break;
-            }
-
-            if ($answer === 'help') {
-                $this->printHelp($output);
+            if (!$this->subCommands->has($command)) {
+                $style->error('Unknown command: "' . $command. '"');
                 continue;
             }
 
-            if ($answer === 'dump') {
-                dump($changeSet->getChanges());
-                continue;
-            }
-
-            if ($answer === 'inspect') {
-                if (!$this->pathToNodeConverter->getNodeId($path, $this->stage)) {
-                    $style->error('The current path does not point at a page with content');
-                    continue;
-                }
-
-                $path->toggleInspection();
-
-                continue;
-            }
-
-            if (str_starts_with($answer, 'set')) {
-                if (!str_contains($answer, ' ')) {
-                    $style->error('"set" requires an argument');
-                    continue;
-                }
-
-                [$_, $property, $value] = explode(' ', $answer, 3);
-
-                $setPath = clone $path;
-                $setPath->set($property);
-
-                $changeSet->add($setPath, $this->stage, new SetValue($value));
-
-                continue;
-            }
-
-            if (str_starts_with($answer, 'rm')) {
-                if (!str_contains($answer, ' ')) {
-                    $style->error('set requires an argument');
-                    continue;
-                }
-
-                [$_, $property] = explode(' ', $answer, 2);
-
-                $setPath = clone $path;
-                $setPath->set($property);
-                $changeSet->add($setPath, $this->stage, new DeletePath());
-
-                continue;
-            }
-
-            if ($answer === 'save') {
-                $output->writeln('Saving ' . count($changeSet) . ' change(s)');
-                $this->changesetSaver->save($changeSet);
-
-                $style->success('Saved!');
-                continue;
-            }
-
-            if (str_starts_with($answer, 'cd')) {
-                if (!str_contains($answer, ' ')) {
-                    $style->error('"cd" requires an argument');
-                    continue;
-                }
-
-                [$_, $subdirectory] = explode(' ', $answer, 2);
-
-                $path->set($subdirectory);
-                continue;
-            }
-
-            if (str_starts_with($answer, 'ls')) {
-                $currentPath = clone $path;
-                if (str_contains($answer, ' ')) {
-                    [$_, $subdirectory] = explode(' ', $answer, 2);
-                    $path->set($subdirectory);
-                }
-
-                $this->contentLister->listContent($style, $path, $this->stage);
-
-                $path = $currentPath;
-                continue;
-            }
-
-            $style->error('Unknown command: "' . $answer . '"');
+            $context->setSubCommandArguments($subCommands);
+            $subCommand = $this->subCommands->get($command);
+            Assert::isInstanceOf($subCommand, SubCommand::class);
+            $subCommand->run($context);
         }
 
         return Command::SUCCESS;
-    }
-
-    public function printHelp(OutputInterface $output): void
-    {
-        $output->writeln(self::HELP_TEXT);
     }
 }

@@ -6,7 +6,7 @@ namespace Mamazu\SuluCliBundle\Object\Changes;
 
 use Countable;
 use Mamazu\SuluCliBundle\Object\ContentPath;
-use Mamazu\SuluCliBundle\Services\PathToNodeConverter;
+use Mamazu\SuluCliBundle\Services\PathToNodeConverterInterface;
 
 class ChangeSet implements Countable
 {
@@ -14,7 +14,7 @@ class ChangeSet implements Countable
     private array $changes = [];
 
     public function __construct(
-        private readonly PathToNodeConverter $pathToNodeId,
+        private readonly PathToNodeConverterInterface $pathToNodeId,
     ) {}
 
     public function isEmpty(): bool
@@ -36,7 +36,7 @@ class ChangeSet implements Countable
 
         if (!$path->isInspecting()) {
             $this->changes[$contentId] = new DeletePath();
-        } else if ($this->changes[$contentId] instanceof DeletePath) {
+        } else if (($this->changes[$contentId] ?? null) instanceof DeletePath) {
             // Page is already scheduled for deletion skip anything else
         } else {
             $this->changes[$contentId][$path->getPropertyPath()] = $change;

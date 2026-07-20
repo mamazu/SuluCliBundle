@@ -113,9 +113,9 @@ class Shell
     private function readline(): string|false
     {
         if ($this->hasReadline) {
-            $line = readline($this->prompt->__toString() . ' > ');
+            $line = readline($this->prompt . ' > ');
         } else {
-            $this->output->write($this->prompt->__toString());
+            $this->output->write((string) $this->prompt);
             $line = fgets(STDIN, 1024);
             if ($line === false) {
                 return false;
