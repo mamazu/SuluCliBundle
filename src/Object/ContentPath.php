@@ -79,6 +79,12 @@ class ContentPath
         return implode('/', $this->propertyParts);
     }
 
+    /** @return array<string> */
+    public function getPropertyPathParts(): array
+    {
+        return $this->propertyParts;
+    }
+
     public function set(string $path): void
     {
         $propertyPath = null;

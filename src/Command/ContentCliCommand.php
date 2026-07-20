@@ -80,12 +80,12 @@ class ContentCliCommand extends Command
 
             if ($answer === 'exit') {
                 if ($changeSet->isEmpty()) {
-                    $output->writeln(sprintf(
-                        '<info>You have %d changes that were not yet saved.</info>',
+                    $style->info(sprintf(
+                        'You have %d changes that were not yet saved.',
                         count($changeSet),
                     ));
-                    $output->writeln(
-                        '<error>You can\'t leave with pending changes. Either "save" them or use "exit!"</error>',
+                    $style->error(
+                        'You can\'t leave with pending changes. Either "save" them or use "exit!"',
                     );
                     continue;
                 }
@@ -105,7 +105,7 @@ class ContentCliCommand extends Command
 
             if ($answer === 'inspect') {
                 if (!$this->pathToNodeConverter->getNodeId($path, $this->stage)) {
-                    $output->writeln('<error>The current path does not point at a page with content</error>');
+                    $style->error('The current path does not point at a page with content');
                     continue;
                 }
 
@@ -116,7 +116,7 @@ class ContentCliCommand extends Command
 
             if (str_starts_with($answer, 'set')) {
                 if (!str_contains($answer, ' ')) {
-                    $output->writeln('<error>set requires an argument</error>');
+                    $style->error('"set" requires an argument');
                     continue;
                 }
 
@@ -132,7 +132,7 @@ class ContentCliCommand extends Command
 
             if (str_starts_with($answer, 'rm')) {
                 if (!str_contains($answer, ' ')) {
-                    $output->writeln('<error>set requires an argument</error>');
+                    $style->error('set requires an argument');
                     continue;
                 }
 
@@ -149,13 +149,13 @@ class ContentCliCommand extends Command
                 $output->writeln('Saving ' . count($changeSet) . ' change(s)');
                 $this->changesetSaver->save($changeSet);
 
-                $output->writeln('<success>Saved!</success>');
+                $style->success('Saved!');
                 continue;
             }
 
             if (str_starts_with($answer, 'cd')) {
                 if (!str_contains($answer, ' ')) {
-                    $output->writeln('<error>cd requires an argument</error>');
+                    $style->error('"cd" requires an argument');
                     continue;
                 }
 

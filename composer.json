@@ -4,7 +4,7 @@
     "type": "library",
     "require": {
         "sulu/sulu": "^3.0",
-        "webmozart/assert": "^1.11"
+        "webmozart/assert": "^1.11 || ^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.0",

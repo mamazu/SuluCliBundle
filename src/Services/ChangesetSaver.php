@@ -23,7 +23,11 @@ class ChangesetSaver implements ChangesetSaverInterface
             if ($page === null)
                 continue;
 
-            $this->applyChanges($page, $changes);
+            if (is_array($changes)) {
+                $this->applyChanges($page, $changes);
+            } else {
+                $this->entityManager->remove($page);
+            }
 
             $this->entityManager->flush();
         }
